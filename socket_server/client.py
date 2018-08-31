@@ -1,30 +1,8 @@
 import logging
 import socket
 import time
-import struct
-
-
-def recvall(socket, count):
-    ret = b''
-    while count:
-        data = socket.recv(count)
-        if not data:
-            raise EOFError()
-        ret += data
-        count -= len(data)
-    return ret
-
-
-def send_message(socket, data):
-    length = len(data)
-    socket.sendall(struct.pack('!I', length))
-    socket.sendall(data)
-
-
-def recv_message(socket):
-    lengthbuf = recvall(socket, 4)
-    length, = struct.unpack('!I', lengthbuf)
-    return recvall(socket, length)
+from util import send_message
+from util import recv_message
 
 
 class Client(object):
@@ -40,9 +18,9 @@ class Client(object):
     def request(self, msg):
         sock = self.connect()
         send_message(sock, msg)
-        response = recv_message(sock)
+        code, response = recv_message(sock)
         sock.close()
-        return response
+        return (code, response)
 
     def connect(self):
         trials = self.conn_trials

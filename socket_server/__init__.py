@@ -1,3 +1,8 @@
-from server_app import ServerApp
-from server import Server
-from client import Client
+import server_app
+import server
+import client
+import util
+ServerApp = server_app.ServerApp
+Server = server.Server
+Client = client.Client
+ReturnCode = util.ReturnCode

@@ -34,6 +34,7 @@ class ServerApp(object):
                  log_file=None,
                  work_dir=None,
                  logger=None,
+                 verbose=True,
                  **kwargs):
         self.klass = klass
         self.system_name = klass.get_system_name()
@@ -47,6 +48,7 @@ class ServerApp(object):
         self._logger = logger
         self.kwargs = kwargs
         self.python_prefix = ["/usr/bin/env", "python"]
+        self.verbose = verbose
 
     @property
     def logger(self):
@@ -67,7 +69,10 @@ class ServerApp(object):
         else:
             ch = logging.FileHandler(logfile)
         ch.setFormatter(formatter)
-        logger.setLevel(logging.DEBUG)
+        if self.verbose:
+            logger.setLevel(logging.DEBUG)
+        else:
+            logger.setLevel(logging.WARNING)
         logger.addHandler(ch)
         return logger
 
@@ -287,6 +292,7 @@ if __name__ == "__main__":
     module_name = sys.argv[2]
     klass_name = sys.argv[3]
     fp, pathname, description = imp.find_module(module_name, [module_path])
+    sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
     mod = imp.load_module(module_name, fp, pathname, description)
     klass = getattr(mod, klass_name)
     app = ServerApp(klass)

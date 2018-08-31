@@ -4,8 +4,10 @@ import os
 import socket
 import time
 import json
-from client import send_message
-from client import recv_message
+import traceback
+from util import send_message
+from util import recv_message
+from util import ReturnCode
 
 
 class Server(object):
@@ -33,9 +35,13 @@ class Server(object):
         while self.active:
             time.sleep(self.tick_sec)
             self.tick()
+        self.tear_down()
         self.logger.info("stopped")
 
     def tick(self):
+        pass
+
+    def tear_down(self):
         pass
 
     def start_listener(self):
@@ -59,14 +65,22 @@ class Server(object):
             conn, addr = self.socket.accept()
             self.logger.debug('accepted')
             try:
-                data = recv_message(conn)
+                code, data = recv_message(conn)
                 self.logger.debug('recvall %s', data)
-                ret = self.process(data)
-                if isinstance(ret, dict):
-                    ret = json.dumps(ret)
-                send_message(conn, ret)
+                if self.active:
+                    try:
+                        code, ret = self.process(code, data)
+                        if isinstance(ret, dict):
+                            ret = json.dumps(ret)
+                        send_message(conn, ret, code)
+                    except Exception as e:
+                        msg = str(e) + "\n" + traceback.format_exc()
+                        send_message(conn, msg, ReturnCode.ERROR)
+                else:
+                    msg = 'Server stopped'
+                    send_message(conn, msg, ReturnCode.STOPPED)
             finally:
                 conn.close()
 
-    def process(self, data):
+    def process(self, code, data):
         raise NotImplementedError('process not implemented')

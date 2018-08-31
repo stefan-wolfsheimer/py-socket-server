@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+from example import do_put
+
+
+if __name__ == "__main__":
+    do_put()
