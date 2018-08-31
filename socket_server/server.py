@@ -4,6 +4,8 @@ import os
 import socket
 import time
 import json
+from client import send_message
+from client import recv_message
 
 
 class Server(object):
@@ -15,6 +17,7 @@ class Server(object):
         return cls.__name__
 
     def __init__(self, socket_file, tick_sec=1,
+                 is_daemon=True,
                  logger=logging.getLogger("Server")):
         self.socket_file = socket_file
         self.tick_sec = tick_sec
@@ -24,7 +27,7 @@ class Server(object):
         self.listener_thread = threading.Thread(name='listener',
                                                 target=self.listener,
                                                 args=())
-        self.listener_thread.daemon = True
+        self.listener_thread.setDaemon(is_daemon)
 
     def run(self):
         while self.active:
