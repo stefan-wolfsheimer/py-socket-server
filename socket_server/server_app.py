@@ -2,6 +2,7 @@
 import logging
 import os
 import sys
+import errno
 import atexit
 import signal
 import time
@@ -67,6 +68,9 @@ class ServerApp(object):
         if logfile is None:
             ch = logging.StreamHandler()
         else:
+            dirname = os.path.dirname(logfile)
+            if not os.path.exists(dirname):
+                os.makedirs(dirname)
             ch = logging.FileHandler(logfile)
         ch.setFormatter(formatter)
         if self.verbose:
