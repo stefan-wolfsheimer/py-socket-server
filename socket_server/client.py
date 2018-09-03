@@ -1,6 +1,7 @@
 import logging
 import socket
 import time
+import json
 from util import send_message
 from util import recv_message
 
@@ -16,6 +17,8 @@ class Client(object):
         self.logger = logger
 
     def request(self, msg):
+        if isinstance(msg, dict):
+            msg = json.dumps(msg)
         sock = self.connect()
         send_message(sock, msg)
         code, response = recv_message(sock)
