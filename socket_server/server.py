@@ -79,6 +79,9 @@ class Server(object):
                 else:
                     msg = 'Server stopped'
                     send_message(conn, msg, ReturnCode.STOPPED)
+            except Exception as e:
+                msg = str(e) + "\n" + traceback.format_exc()
+                send_message(conn, msg, ReturnCode.ERROR)
             finally:
                 conn.close()
 
