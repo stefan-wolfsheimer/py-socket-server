@@ -6,17 +6,19 @@ class ReturnCode(object):
     ERROR = 1
     UNDEFINED = 2
     STOPPED = 3
+    YIELD = 4
+    EOF = 5
+
+    code2str = {0: "OK",
+                1: "ERROR",
+                2: "UNDEFINED",
+                3: "STOPPED",
+                4: "YIELD",
+                5: "EOF"}
 
     @staticmethod
     def to_string(code):
-        if code == ReturnCode.OK:
-            return "OK"
-        elif code == ReturnCode.ERROR:
-            return "ERROR"
-        elif code == ReturnCode.UNDEFINED:
-            return "UNDEFINED"
-        elif code == ReturnCode.STOPPED:
-            return "STOPPED"
+        return ReturnCode.code2str.get(code, "UNKNOWN")
 
 
 def recvall(socket, count):

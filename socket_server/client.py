@@ -4,6 +4,7 @@ import time
 import json
 from util import send_message
 from util import recv_message
+from util import ReturnCode
 
 
 class Client(object):
@@ -24,6 +25,18 @@ class Client(object):
         code, response = recv_message(sock)
         sock.close()
         return (code, response)
+
+    def request_all(self, msg):
+        if isinstance(msg, dict):
+            msg = json.dumps(msg)
+        sock = self.connect()
+        send_message(sock, msg, ReturnCode.YIELD)
+        code = ReturnCode.OK
+        while code == ReturnCode.OK:
+            code, response = recv_message(sock)
+            if code != ReturnCode.EOF:
+                yield code, response
+        sock.close()
 
     def connect(self):
         trials = self.conn_trials

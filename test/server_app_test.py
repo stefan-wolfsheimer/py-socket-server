@@ -1,10 +1,12 @@
 import unittest
 import os
 import sys
+import re
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from test.tempdir import Tempdir
 from socket_server import ServerApp
 from socket_server import Server
+from socket_server import ReturnCode
 
 
 class MyServer(Server):
@@ -12,9 +14,18 @@ class MyServer(Server):
         super(MyServer, self).__init__(**kwargs)
         self.counter = 0
 
-    def process(self, msg):
+    def process(self, code, msg):
         self.counter += 1
-        return "%d %s" % (self.counter, msg)
+        return (ReturnCode.OK, "%d %s" % (self.counter, msg))
+
+    def process_all(self, code, msg):
+        m = re.match('^lst(\\d+)$', msg)
+        if m:
+            n = int(m.group(1))
+        else:
+            n = 1
+        for i in range(1, n + 1):
+            yield (ReturnCode.OK, "%d %s" % (i, msg))
 
 
 class TestStringMethods(unittest.TestCase):

@@ -2,7 +2,6 @@
 import logging
 import os
 import sys
-import errno
 import atexit
 import signal
 import time
@@ -36,6 +35,7 @@ class ServerApp(object):
                  work_dir=None,
                  logger=None,
                  verbose=True,
+                 custom_args=None,
                  **kwargs):
         self.klass = klass
         self.system_name = klass.get_system_name()
@@ -50,6 +50,10 @@ class ServerApp(object):
         self.kwargs = kwargs
         self.python_prefix = ["/usr/bin/env", "python"]
         self.verbose = verbose
+        if custom_args is None:
+            self.custom_args = klass.get_custom_arguments()
+        else:
+            self.custom_args = custom_args
 
     @property
     def logger(self):
@@ -104,7 +108,9 @@ class ServerApp(object):
                                   self._get_default_workdir()))
         parser.add_argument("operation", type=str, nargs='?',
                             help="start|stop|status|restart|log (optional)")
+        self.custom_args.before_argument_parsing(self, parser)
         args = parser.parse_args(argv)
+        self.custom_args.after_argument_parsing(self, parser, args)
         if args.log is not None:
             self.log_file = args.log
         if args.socket is not None:
@@ -160,9 +166,12 @@ class ServerApp(object):
                                         '--socket', self.socket_file,
                                         '--pid', self.pid_file,
                                         '--log', self.log_file]
+            cmd += self.custom_args.get_cli_arguments()
+            self.custom_args.before_start(self)
             self.logger.info('start %s', ' '.join(cmd))
             p = subprocess.Popen(cmd)
             self.wait_for_process(p.pid)
+            self.custom_args.after_start(self)
             self.logger.info("started daemon with pid %d" % p.pid)
         else:
             self.logger.info("daemon already running (%s %d)" %
@@ -297,6 +306,7 @@ if __name__ == "__main__":
     klass_name = sys.argv[3]
     fp, pathname, description = imp.find_module(module_name, [module_path])
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+    sys.path.insert(0, module_path)
     mod = imp.load_module(module_name, fp, pathname, description)
     klass = getattr(mod, klass_name)
     app = ServerApp(klass)
