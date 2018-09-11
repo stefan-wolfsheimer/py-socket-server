@@ -170,27 +170,29 @@ class ServerApp(object):
             self.custom_args.before_start(self)
             self.logger.info('start %s', ' '.join(cmd))
             p = subprocess.Popen(cmd)
-            self.wait_for_process(p.pid)
+            self.wait_for_process(p)
             self.custom_args.after_start(self)
             self.logger.info("started daemon with pid %d" % p.pid)
         else:
             self.logger.info("daemon already running (%s %d)" %
                              (self.pid_file, pid))
 
-    def wait_for_process(self, pid, max_trials=10):
+    def wait_for_process(self, p, max_trials=10):
         n = 0
         while n < max_trials:
+            if p.poll() is not None:
+                raise RuntimeError('failed to start process')
             n += 1
             try:
                 msg = "check if process %d is ready (trial %d / %d)"
-                self.logger.info(msg, pid, n, max_trials)
+                self.logger.info(msg, p.pid, n, max_trials)
                 with open(self.pid_file, "r") as f:
                     _pid = json.load(f).get('pid')
-                    if _pid == pid:
+                    if _pid == p.pid:
                         return True
                     else:
                         msg = "pid in file %s (%d) does not match pid %p"
-                        raise RuntimeError(msg % (self.pid_file, _pid, pid))
+                        raise RuntimeError(msg % (self.pid_file, _pid, p.pid))
             except Exception as e:
                 if n >= max_trials:
                     self.logger.error(str(e))
@@ -270,6 +272,7 @@ class ServerApp(object):
                         logger=self.logger)
         daemon = self.klass(socket_file=self.socket_file,
                             logger=self.logger,
+                            args=args,
                             **self.kwargs)
         signal.signal(signal.SIGINT, daemon.stop)
         daemon.start_listener()

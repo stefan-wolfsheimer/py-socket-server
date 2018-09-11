@@ -41,7 +41,8 @@ class Server(object):
 
     def __init__(self, socket_file, tick_sec=1,
                  is_daemon=True,
-                 logger=logging.getLogger("Server")):
+                 logger=logging.getLogger("Server"),
+                 args=None):
         self.socket_file = socket_file
         self.tick_sec = tick_sec
         self.socket = None
@@ -97,10 +98,7 @@ class Server(object):
                     msg = 'Server stopped'
                     send_message(conn, msg, ReturnCode.STOPPED)
             except Exception as e:
-                msg = {'exception': e.__class__.__name__,
-                       'msg': str(e),
-                       'traceback': traceback.format_exc()}
-                send_message(conn, msg, ReturnCode.ERROR)
+                self._send_error(conn, traceback.format_exc(), e)
             finally:
                 conn.close()
 
@@ -111,10 +109,7 @@ class Server(object):
                 ret = json.dumps(ret)
             send_message(conn, ret, code)
         except Exception as e:
-            msg = {'exception': e.__class__.__name__,
-                   'msg': str(e),
-                   'traceback': traceback.format_exc()}
-            send_message(conn, json.dumps(msg), ReturnCode.ERROR)
+            self._send_error(conn, traceback.format_exc(), e)
 
     def handle_request_all(self, conn, code, data):
         try:
@@ -124,13 +119,19 @@ class Server(object):
                 send_message(conn, ret, code)
             send_message(conn, "EOF", ReturnCode.EOF)
         except Exception as e:
-            msg = {'exception': e.__class__.__name__,
-                   'msg': str(e),
-                   'traceback': traceback.format_exc()}
-            send_message(conn, json.dumps(msg), ReturnCode.ERROR)
+            self._send_error(conn, traceback.format_exc(), e)
 
     def process(self, code, data):
         raise NotImplementedError('process not implemented')
 
     def process_all(self, code, data):
         raise NotImplementedError('process all not implemented')
+
+    def _send_error(self, conn, tb, e):
+        strmsg = str(e)
+        if strmsg == 'None':
+            strmsg = e.__class__.__name__
+        msg = {'exception': e.__class__.__name__,
+               'msg': strmsg,
+               'traceback': tb}
+        send_message(conn, json.dumps(msg), ReturnCode.ERROR)
